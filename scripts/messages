@@ -1,0 +1,83 @@
+#!/usr/bin/env ruby
+require 'rubygems'
+
+gem 'activerecord', '>= 3.2.0', '<= 5.0.0'
+
+require 'active_record'
+
+MESSAGES_DB = File.expand_path('~/Library/Messages/chat.db').freeze
+DEFAULT_FORMAT = '%{count}'.freeze
+
+ActiveRecord::Base.configurations = {
+  'messages' => {
+    adapter: :sqlite3,
+    database: MESSAGES_DB
+  }
+}
+
+class Model < ActiveRecord::Base
+  establish_connection :messages
+  self.abstract_class = true
+
+  def readonly?
+    true
+  end
+end
+
+class Handle < Model
+  self.table_name = 'handle'
+end
+
+class ChatHandle < Model
+  self.table_name = 'chat_handle_join'
+end
+
+class ChatMessage < Model
+  self.table_name = 'chat_message_join'
+
+  belongs_to :chat
+  belongs_to :message
+end
+
+class MessageAttachment < Model
+  self.table_name = 'message_attachment_join'
+
+  belongs_to :attachment
+  belongs_to :message
+end
+
+class Attachment < Model
+  self.table_name = 'attachment'
+
+  has_one :message_attachment
+  has_one :message, through: :message_attachment
+end
+
+class Message < Model
+  self.table_name = 'message'
+  self.inheritance_column = '__noop__'
+
+  has_one :chat_message
+  has_one :chat, through: :chat_message
+
+  has_one :message_attachment
+  has_one :attachment, through: :message_attachment
+
+  scope :to_me,   ->(){ where(is_from_me: false) }
+  scope :mine,    ->(){ where(is_from_me: true) }
+  scope :unread,  ->(){ where(is_read: false) }
+  scope :text,    ->(){ where(arel_table[:text].not_eq(nil)) }
+end
+
+class Chat < Model
+  self.table_name = 'chat'
+
+  has_many :chat_messages
+  has_many :messages, through: :chat_messages
+end
+
+unread = Message.to_me.unread.text
+
+puts DEFAULT_FORMAT % {
+  count: unread.count
+}
