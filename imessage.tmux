@@ -3,7 +3,7 @@
 CURRENT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 source "$CURRENT_DIR/scripts/helpers.sh"
 
-messages="#($CURRENT_DIR/scripts/messages.sh)"
+messages="#($CURRENT_DIR/scripts/message_count.sh)"
 messages_interpolation="\#{imessages}"
 
 do_interpolation() {
